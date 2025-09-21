@@ -1,0 +1,41 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: exam-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: examdb
+      MYSQL_USER: examuser
+      MYSQL_PASSWORD: exampass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  backend:
+    build:
+      context: ./backend/src
+      dockerfile: Dockerfile
+    container_name: exam-backend
+    depends_on:
+      - mysql
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_ENVIRONMENT=Development  
+      - ConnectionStrings__Default=server=exam-mysql;port=3306;database=examdb;user=examuser;password=exampass;AllowPublicKeyRetrieval=True;SslMode=none
+    ports:
+      - "5000:8080"
+
+  frontend:
+    build: ./frontend
+    container_name: exam-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  mysql_data:
